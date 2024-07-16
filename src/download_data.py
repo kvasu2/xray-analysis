@@ -10,7 +10,7 @@ def main():
     data_dir = os.path.join(parent_dir, 'data')
 
     # Download the dataset
-    # api.dataset_download_files('nih-chest-xrays/data', path='data', unzip=False)
+    # api.dataset_download_files('nih-chest-xrays/data', path=data_dir, unzip=False)
     api.dataset_download_files('nih-chest-xrays/sample', path=data_dir, unzip=False)
         
 if __name__ == "__main__":

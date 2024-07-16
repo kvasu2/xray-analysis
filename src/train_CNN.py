@@ -123,8 +123,7 @@ def train_model(model, train_loader, val_loader, criterion, optimizer, num_epoch
         
         print(f'Epoch {epoch+1}/{num_epochs}, Train Loss: {epoch_loss:.4f}, Val Loss: {val_loss:.4f}, Val Accuracy: {accuracy:.4f}')
 
-# Main execution
-if __name__ == "__main__":
+def main():
 
     # Get the directory of the current file
     current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -157,3 +156,7 @@ if __name__ == "__main__":
 
     # Save the trained model
     torch.save(model.state_dict(), 'image_classification_model.pth')
+
+
+if __name__ == "__main__":
+    main()
