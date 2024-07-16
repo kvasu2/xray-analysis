@@ -13,7 +13,7 @@ class ImageClassificationCNN(nn.Module):
     def __init__(self, num_classes):
         super(ImageClassificationCNN, self).__init__()
         self.features = nn.Sequential(
-            nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1),
+            nn.Conv2d(1, 64, kernel_size=3, stride=1, padding=1),  # Changed input channels to 1
             nn.ReLU(inplace=True),
             nn.MaxPool2d(kernel_size=2, stride=2),
             nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1),
@@ -53,7 +53,7 @@ class CustomImageDataset(Dataset):
 
     def __getitem__(self, idx):
         img_name = os.path.join(self.img_dir, self.labels_df.iloc[idx, 0])
-        image = Image.open(img_name).convert('RGB')
+        image = Image.open(img_name).convert('L')  # Convert to grayscale
         label = self.labels_df.iloc[idx, 1]
         
         if self.transform:
@@ -64,9 +64,9 @@ class CustomImageDataset(Dataset):
 # Data preprocessing and loading
 def load_data(img_dir, labels_df, batch_size=32):
     transform = transforms.Compose([
-        transforms.Resize((224, 224)),  # Resize to a smaller size for efficiency
+        transforms.Resize((224, 224)),
         transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        transforms.Normalize(mean=[0.5], std=[0.5])  # Normalize for grayscale
     ])
 
     dataset = CustomImageDataset(img_dir, labels_df, transform=transform)
