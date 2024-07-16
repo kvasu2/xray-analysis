@@ -126,7 +126,11 @@ def train_model(model, train_loader, val_loader, criterion, optimizer, num_epoch
 # Main execution
 if __name__ == "__main__":
 
-    parent_dir = os.path.abspath(os.path.join(os.getcwd(), os.pardir))
+    # Get the directory of the current file
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+
+    # Get the parent directory
+    parent_dir = os.path.dirname(current_dir)
     images = os.path.join(parent_dir, 'data', 'sample', 'images')
     labels = os.path.join(parent_dir, 'data', 'sample', 'labels.csv')
     # Load your labels DataFrame

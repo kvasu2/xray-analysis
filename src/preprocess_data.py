@@ -10,26 +10,30 @@ def main():
 
     with zipfile.ZipFile(zip_file, 'r') as zip_ref:
         zip_ref.extractall(output_dir)
-    
-    parent_dir = os.path.abspath(os.path.join(os.getcwd(), os.pardir))
+
+    # Get the directory of the current file
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+
+    # Get the parent directory
+    parent_dir = os.path.dirname(current_dir)
 
     metadata = pd.read_csv(os.path.join(parent_dir,"data" , 'sample_labels.csv'))
 
     conditions = [
-    "Hernia",
-    "Pneumonia",
-    "Fibrosis",
-    "Edema",
-    "Emphysema",
-    "Cardiomegaly",
-    "Pleural_Thickening",
-    "Consolidation",
-    "Pneumothorax",
-    "Mass",
-    "Nodule",
-    "Atelectasis",
-    "Effusion",
-    "Infiltration"
+        "Hernia",
+        "Pneumonia",
+        "Fibrosis",
+        "Edema",
+        "Emphysema",
+        "Cardiomegaly",
+        "Pleural_Thickening",
+        "Consolidation",
+        "Pneumothorax",
+        "Mass",
+        "Nodule",
+        "Atelectasis",
+        "Effusion",
+        "Infiltration"
     ]
 
     for condition in conditions:
