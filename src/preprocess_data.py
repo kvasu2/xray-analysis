@@ -5,11 +5,14 @@ import pandas as pd
 
 
 def main():
-    zip_file = "data/sample.zip"
-    output_dir = "data/"
 
-    with zipfile.ZipFile(zip_file, 'r') as zip_ref:
-        zip_ref.extractall(output_dir)
+    unzip = False
+    if unzip:
+        zip_file = "data/sample.zip"
+        output_dir = "data/"
+
+        with zipfile.ZipFile(zip_file, 'r') as zip_ref:
+            zip_ref.extractall(output_dir)
 
     # Get the directory of the current file
     current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -42,7 +45,7 @@ def main():
             metadata.loc[~metadata['Finding Labels'].str.contains(condition), condition] = 0
 
 
-    labels = metadata[["Image Index","Emphysema"]]
+    labels = metadata[["Image Index"]+conditions]
     labels.to_csv(os.path.join(parent_dir, 'data', 'sample', 'labels.csv'), index=False)
 
 
