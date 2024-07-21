@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
+import torch.nn.functional as F
 from torch.utils.data import DataLoader, Dataset, random_split
 from sklearn.metrics import accuracy_score
 import pandas as pd
@@ -8,7 +9,7 @@ from PIL import Image
 import os
 import numpy as np
 from tqdm import tqdm
-
+import matplotlib.pyplot as plt
 
 # Global variables
 #------------------------------------------------------------------------------------------------------------
@@ -26,12 +27,15 @@ img_dir = os.path.join(parent_dir, 'data', 'sample', 'images')
 # Define the device
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+# Define the number of epochs
+num_epochs = 1
+
 # Define the path to save the model
 model_path = os.path.join(parent_dir, 'models', 'CNN_multilabel.pth')
 
 # Define the input shape and number of classes
 input_shape = (1, 224, 224)
-num_classes = 14  # Adjust this based on the number of diseases you're classifying
+num_classes = 15  # Adjust this based on the number of diseases you're classifying
 
 #------------------------------------------------------------------------------------------------------------
 #------------------------------------------------------------------------------------------------------------
@@ -74,50 +78,148 @@ class ChestXRayDataset(Dataset):
 #------------------------------------------------------------------------------------------------------------
 
 # Define the CNN model
-
 class ChestXRayCNN(nn.Module):
     def __init__(self):
         super(ChestXRayCNN, self).__init__()
-        self.conv1 = nn.Conv2d(1, 32, kernel_size=3, padding=1)
-        self.conv2 = nn.Conv2d(32, 64, kernel_size=3, padding=1)
-        self.conv3 = nn.Conv2d(64, 64, kernel_size=3, padding=1)
-        self.pool = nn.MaxPool2d(2, 2)
-        self.fc1 = nn.Linear(64 * 28 * 28, 64)
+        self.features = nn.Sequential(
+            nn.Conv2d(1, 32, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.MaxPool2d(2, 2),
+            nn.Conv2d(32, 64, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.MaxPool2d(2, 2),
+            nn.Conv2d(64, 1, kernel_size=3, padding=1),  # Changed to output 1 channel
+            nn.ReLU(),
+            nn.MaxPool2d(2, 2)
+        )
+        self.fc1 = nn.Linear(28 * 28, 64)  # Adjusted input size
         self.fc2 = nn.Linear(64, num_classes)
         self.relu = nn.ReLU()
         self.sigmoid = nn.Sigmoid()
+        self.feature_maps = None
 
     def forward(self, x):
-        x = self.pool(self.relu(self.conv1(x)))
-        x = self.pool(self.relu(self.conv2(x)))
-        x = self.pool(self.relu(self.conv3(x)))
-        x = x.view(-1, 64 * 28 * 28)
+        self.feature_maps = self.features(x)
+        x = self.feature_maps.view(x.size(0), -1)
         x = self.relu(self.fc1(x))
-        x = self.sigmoid(self.fc2(x))
-        return x
+        fc2_output = self.sigmoid(self.fc2(x))
+        return fc2_output, x
 
-#------------------------------------------------------------------------------------------------------------
-#------------------------------------------------------------------------------------------------------------
-
-# Function to predict diseases
-def predict_diseases(model, image_path):
-    # Load the model from the file
-    model = ChestXRayCNN()
-    model.load_state_dict(torch.load(model_path))
+def get_gradcam(model, image, target_class):
     model.eval()
-    with torch.no_grad():
-        image = Image.open(image_path).convert('L')
-        image = image.resize((224, 224), Image.LANCZOS)  # Downscale the image
-        image = torch.tensor(np.array(image), dtype=torch.float32).unsqueeze(0).unsqueeze(0) / 255.0
-        image = image.to(device)
-        output = model(image)
-    return output.cpu().numpy()[0]
+    image = image.requires_grad_()
+    
+    # Forward pass
+    output,_ = model(image)
+    model.feature_maps.retain_grad()  # Retain gradients for feature maps
+    
+    # Get the score for the target class
+    score = output[0][target_class]
+    
+    # Backward pass
+    score.backward()
+    
+    # Get the gradients and feature maps
+    gradients = model.feature_maps.grad[0, 0]  # Shape: [28, 28]
+    feature_maps = model.feature_maps[0, 0]    # Shape: [28, 28]
+    
+    # Create heatmap
+    heatmap = gradients * feature_maps
+    
+    # Apply ReLU to the heatmap
+    heatmap = F.relu(heatmap)
+    
+    # Normalize the heatmap
+    heatmap = heatmap / torch.max(heatmap)
+    
+    return heatmap.detach().cpu().numpy()
 
 #------------------------------------------------------------------------------------------------------------
 #------------------------------------------------------------------------------------------------------------
+
+def predict_diseases(model, image_path):
+    model.eval()  # Set the model to evaluation mode
+    model.to(device)  # Move model to device
+    
+    image = Image.open(image_path).convert('L')
+    image = image.resize((224, 224), Image.LANCZOS)  # Downscale the image
+    image_tensor = torch.tensor(np.array(image), dtype=torch.float32).unsqueeze(0) / 255.0
+    image_tensor = image_tensor.to(device)
+    
+    # Get predictions
+    with torch.no_grad():
+        output,_ = model(image_tensor)
+    
+    predictions = output.cpu().numpy()[0]
+    
+    # Get the class with the highest prediction
+    target_class = np.argmax(predictions)
+    
+    # Generate Grad-CAM heatmap
+    heatmap = get_gradcam(model, image_tensor, target_class)
+    
+    # Superimpose the heatmap on original image
+    img = np.array(image)
+    heatmap_resized = np.uint8(255 * heatmap)
+    heatmap_resized = Image.fromarray(heatmap_resized).resize((img.shape[1], img.shape[0]))
+    heatmap_resized = np.asarray(heatmap_resized)
+    
+    superimposed_img = heatmap_resized * 0.4 + img
+    superimposed_img = superimposed_img / np.max(superimposed_img)
+    
+    # # Display the original image and the superimposed image
+    # fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
+    # ax1.imshow(img, cmap='gray')
+    # ax1.set_title('Original Image')
+    # ax1.axis('off')
+    # ax2.imshow(superimposed_img, cmap='jet')
+    # ax2.set_title('Grad-CAM Heatmap')
+    # ax2.axis('off')
+    # plt.tight_layout()
+    # plt.show()
+    
+    return predictions, superimposed_img
+#------------------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------------------------------
+
+def visualize_cam(model, image_path, target_class):
+
+    model.eval()
+    model.to(device)
+
+    image = Image.open(image_path).convert('L')
+    image = image.resize((224, 224), Image.LANCZOS)  # Downscale the image
+    image_tensor = torch.tensor(np.array(image), dtype=torch.float32).unsqueeze(0) / 255.0
+    image_tensor = image_tensor.to(device)
+    # Generate the CAM
+    heatmap = get_gradcam(model, image_tensor, target_class)
+    
+    # Superimpose the heatmap on original image
+    img = np.array(image)
+    heatmap_resized = np.uint8(255 * heatmap)
+    heatmap_resized = Image.fromarray(heatmap_resized).resize((img.shape[1], img.shape[0]))
+    heatmap_resized = np.asarray(heatmap_resized)
+    
+    superimposed_img = heatmap_resized * 0.4 + img
+    superimposed_img = superimposed_img / np.max(superimposed_img)
+    
+    # Display the original image and the superimposed image
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
+    ax1.imshow(img, cmap='gray')
+    ax1.set_title('Original Image')
+    ax1.axis('off')
+    ax2.imshow(superimposed_img, cmap='jet')
+    ax2.set_title('Grad-CAM Heatmap')
+    ax2.axis('off')
+    plt.tight_layout()
+    plt.show()
+
+
+#------------------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------------------------------
+
 
 def train():
-
     # Initialize the model
     model = ChestXRayCNN()
 
@@ -126,7 +228,6 @@ def train():
     optimizer = optim.Adam(model.parameters())
 
     # Create dataset and data loader
-
     dataset = ChestXRayDataset(csv_file, img_dir)
     train_loader = DataLoader(dataset, batch_size=32, shuffle=True)
 
@@ -140,7 +241,6 @@ def train():
     val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False)
 
     # Training loop
-    num_epochs = 3
     model.to(device)
     print("Using device:", device)
 
@@ -223,6 +323,11 @@ def train():
 
 def main():
     train()
+
+    # Example usage of predict_diseases
+    # image_path = os.path.join(parent_dir, 'data', 'sample', 'images', '00000013_005.png')
+    # predictions, heatmap = predict_diseases(ChestXRayCNN(), image_path)
+    # print("Predictions:", predictions)
 
 if __name__ == "__main__":
     main()

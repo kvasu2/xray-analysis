@@ -6,7 +6,7 @@ import pandas as pd
 
 def main():
 
-    unzip = False
+    unzip = True
     if unzip:
         zip_file = "data/sample.zip"
         output_dir = "data/"
@@ -23,6 +23,7 @@ def main():
     metadata = pd.read_csv(os.path.join(parent_dir,"data" , 'sample_labels.csv'))
 
     conditions = [
+        "No Finding",
         "Hernia",
         "Pneumonia",
         "Fibrosis",
