@@ -8,11 +8,12 @@ dependencies:
   - pytorch
   - torchvision
   - pytorch-cuda=11.8
+  - torch
   - pip
   - pip:
-    - numpy==1.19.5
+    - numpy==1.26.2
     - matplotlib
-    - pandas
+    - pandas==2.1.4
     - scikit-learn
     - ipykernel
     - kaggle

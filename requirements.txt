@@ -1,5 +1,7 @@
 kaggle
-numpy==1.19.5
-pandas
+numpy==1.26.2
+pandas==2.1.4
 scikit-learn
 ipykernel
+torch
+
