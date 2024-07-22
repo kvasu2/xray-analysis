@@ -20,9 +20,9 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 # Get the parent directory
 parent_dir = os.path.dirname(current_dir)
 
-# Define the path to the labels and images
-csv_file = os.path.join(parent_dir, 'data', 'sample' ,'labels.csv')
-img_dir = os.path.join(parent_dir, 'data','sample')
+# # Define the path to the labels and images
+# csv_file = os.path.join(parent_dir, 'data', 'sample' ,'labels.csv')
+# img_dir = os.path.join(parent_dir, 'data','sample')
 
 csv_file = os.path.join(parent_dir, 'data' ,'labels.csv')
 img_dir = os.path.join(parent_dir, 'data')
@@ -59,9 +59,10 @@ class ChestXRayDataset(Dataset):
         subdirectories = [name for name in os.listdir(img_dir) if os.path.isdir(os.path.join(img_dir, name))]
         for subdir in subdirectories:
             subdir_path = os.path.join(img_dir, subdir, 'images')
-            file_list = [file for file in os.listdir(subdir_path) if file.endswith('.png')]
-            for file in file_list:
-                file_dict[file] = subdir
+            if os.path.exists(subdir_path):
+                file_list = [file for file in os.listdir(subdir_path) if file.endswith('.png')]
+                for file in file_list:
+                    file_dict[file] = subdir
         self.file_dict = file_dict
 
     def __len__(self):
@@ -306,25 +307,6 @@ def train():
         print(f"  Val Loss: {val_loss:.4f}, Val Accuracy: {val_accuracy:.2f}%")
 
     print("Training completed.")
-
-    # Final validation accuracy using sklearn for multi-label classification
-    model.eval()
-    all_predictions = []
-    all_labels = []
-
-    with torch.no_grad():
-        for batch_images, batch_labels in val_loader:
-            batch_images, batch_labels = batch_images.to(device), batch_labels.to(device)
-            outputs,_ = model(batch_images)
-            predicted = (outputs > 0.5).float()
-            all_predictions.extend(predicted.cpu().numpy())
-            all_labels.extend(batch_labels.cpu().numpy())
-
-    all_predictions = np.array(all_predictions)
-    all_labels = np.array(all_labels)
-
-    final_accuracy = accuracy_score(all_labels.flatten(), all_predictions.flatten())
-    print(f"Final Validation Accuracy: {final_accuracy * 100:.2f}%")
 
     # Save the model to a file
     torch.save(model.state_dict(), model_path)
