@@ -7,7 +7,7 @@ def sample(unzip = False):
 
     if unzip:
         zip_file = "data/sample.zip"
-        output_dir = "data/"
+        output_dir = "data/sample/"
 
         with zipfile.ZipFile(zip_file, 'r') as zip_ref:
             zip_ref.extractall(output_dir)
@@ -18,7 +18,7 @@ def sample(unzip = False):
     # Get the parent directory
     parent_dir = os.path.dirname(current_dir)
 
-    metadata = pd.read_csv(os.path.join(parent_dir,"data" , 'sample_labels.csv'))
+    metadata = pd.read_csv(os.path.join(parent_dir,"data" , 'sample' ,'sample_labels.csv'))
 
     conditions = [
         "No Finding",
@@ -92,5 +92,5 @@ def data(unzip = False):
     labels.to_csv(os.path.join(parent_dir, 'data', 'labels.csv'), index=False)
 
 if __name__ == "__main__":
-    sample(False)
+    sample(True)
     # data()

@@ -21,8 +21,11 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(current_dir)
 
 # Define the path to the labels and images
-csv_file = os.path.join(parent_dir, 'data', 'sample', 'labels.csv')
-img_dir = os.path.join(parent_dir, 'data', 'sample', 'images')
+csv_file = os.path.join(parent_dir, 'data', 'sample' ,'labels.csv')
+img_dir = os.path.join(parent_dir, 'data','sample')
+
+csv_file = os.path.join(parent_dir, 'data' ,'labels.csv')
+img_dir = os.path.join(parent_dir, 'data')
 
 # Define the device
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -52,11 +55,20 @@ class ChestXRayDataset(Dataset):
         label_columns = self.data.columns[1:num_classes+1]
         self.data[label_columns] = self.data[label_columns].apply(pd.to_numeric, errors='coerce').fillna(0)
 
+        file_dict = {}
+        subdirectories = [name for name in os.listdir(img_dir) if os.path.isdir(os.path.join(img_dir, name))]
+        for subdir in subdirectories:
+            subdir_path = os.path.join(img_dir, subdir, 'images')
+            file_list = [file for file in os.listdir(subdir_path) if file.endswith('.png')]
+            for file in file_list:
+                file_dict[file] = subdir
+        self.file_dict = file_dict
+
     def __len__(self):
         return len(self.data)
     
     def __getitem__(self, idx):
-        img_name = os.path.join(self.img_dir, self.data.iloc[idx, 0])
+        img_name = os.path.join(self.img_dir, self.file_dict[self.data.iloc[idx, 0]], 'images' ,self.data.iloc[idx, 0])
         image = Image.open(img_name).convert('L')  # Open as grayscale
         
         # Downscale the image to 224x224
@@ -255,7 +267,7 @@ def train():
             batch_images, batch_labels = batch_images.to(device), batch_labels.to(device)
             
             optimizer.zero_grad()
-            outputs = model(batch_images)
+            outputs,_ = model(batch_images)
             loss = criterion(outputs, batch_labels)
             loss.backward()
             optimizer.step()
@@ -278,7 +290,7 @@ def train():
             for batch_images, batch_labels in val_loader:
                 batch_images, batch_labels = batch_images.to(device), batch_labels.to(device)
                 
-                outputs = model(batch_images)
+                outputs,_ = model(batch_images)
                 loss = criterion(outputs, batch_labels)
                 
                 val_loss += loss.item()
@@ -303,7 +315,7 @@ def train():
     with torch.no_grad():
         for batch_images, batch_labels in val_loader:
             batch_images, batch_labels = batch_images.to(device), batch_labels.to(device)
-            outputs = model(batch_images)
+            outputs,_ = model(batch_images)
             predicted = (outputs > 0.5).float()
             all_predictions.extend(predicted.cpu().numpy())
             all_labels.extend(batch_labels.cpu().numpy())
