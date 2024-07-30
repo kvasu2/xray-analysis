@@ -22,12 +22,12 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 # Get the parent directory
 parent_dir = os.path.dirname(current_dir)
 
-# # Define the path to the labels and images
-# csv_file = os.path.join(parent_dir, 'data', 'sample' ,'labels.csv')
-# img_dir = os.path.join(parent_dir, 'data','sample')
+# Define the path to the labels and images
+csv_file = os.path.join(parent_dir, 'data', 'sample' ,'labels.csv')
+img_dir = os.path.join(parent_dir, 'data','sample')
 
-csv_file = os.path.join(parent_dir, 'data' ,'labels.csv')
-img_dir = os.path.join(parent_dir, 'data')
+# csv_file = os.path.join(parent_dir, 'data' ,'labels.csv')
+# img_dir = os.path.join(parent_dir, 'data')
 
 # Define the device
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -36,11 +36,11 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 num_epochs = 1
 
 # Define the path to save the model
-model_path = os.path.join(parent_dir, 'models', 'RESNET18_multilabel.pth')
+model_path = os.path.join(parent_dir, 'models', 'RESNET18_diseasedetection.pth')
 
 # Define the input shape and number of classes
 input_shape = (1, 224, 224)
-num_classes = 15  # Adjust this based on the number of diseases you're classifying
+num_classes = 1  # Adjust this based on the number of diseases you're classifying
 
 #------------------------------------------------------------------------------------------------------------
 #------------------------------------------------------------------------------------------------------------
