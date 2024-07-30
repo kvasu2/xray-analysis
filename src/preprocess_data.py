@@ -5,18 +5,20 @@ import pandas as pd
 
 def sample(unzip = False):
 
-    if unzip:
-        zip_file = "data/sample.zip"
-        output_dir = "data/sample/"
-
-        with zipfile.ZipFile(zip_file, 'r') as zip_ref:
-            zip_ref.extractall(output_dir)
-
     # Get the directory of the current file
     current_dir = os.path.dirname(os.path.abspath(__file__))
 
     # Get the parent directory
     parent_dir = os.path.dirname(current_dir)
+
+    if unzip:
+        zip_file = os.path.join(parent_dir,"data/sample.zip")
+        output_dir = os.path.join(parent_dir,"data/sample/")
+
+        with zipfile.ZipFile(zip_file, 'r') as zip_ref:
+            zip_ref.extractall(output_dir)
+
+
 
     metadata = pd.read_csv(os.path.join(parent_dir,"data" , 'sample' ,'sample_labels.csv'))
 
@@ -49,18 +51,18 @@ def sample(unzip = False):
 
 def data(unzip = False):
     
-    if unzip:
-        zip_file = "data/data.zip"
-        output_dir = "data/"
-
-        with zipfile.ZipFile(zip_file, 'r') as zip_ref:
-            zip_ref.extractall(output_dir)
-
     # Get the directory of the current file
     current_dir = os.path.dirname(os.path.abspath(__file__))
 
     # Get the parent directory
     parent_dir = os.path.dirname(current_dir)
+    
+    if unzip:
+        zip_file = os.path.join(parent_dir,"data/data.zip")
+        output_dir = os.path.join(parent_dir,"data/")
+
+        with zipfile.ZipFile(zip_file, 'r') as zip_ref:
+            zip_ref.extractall(output_dir)
 
     metadata = pd.read_csv(os.path.join(parent_dir,"data" , 'Data_Entry_2017.csv'))
 
